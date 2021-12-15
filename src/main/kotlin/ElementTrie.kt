@@ -9,38 +9,86 @@ class ElementTrie {
     }
 
     private fun recursiveInsertion(molecule: Molecule, elements: Array<out Element>, current: ElementTrieNode) {
-        if (elements.isEmpty()) return
+        if (elements.isEmpty()) return // If this is an empty molecule it's done
+        // Create the new child if it didn't exist before
         var node = current.children[elements[0].number - 1]
         if (node == null)
             node = ElementTrieNode()
         node.isMolecule = elements.size == 1 || node.isMolecule
         if (node.isMolecule && elements.size == 1)
             node.molecule = molecule
-        current.children[elements[0].number - 1] = node
-        recursiveInsertion(molecule, elements.sliceArray(0 until elements.size - 1), node)
+        current.children[elements[0].number - 1] = node // Set the child
+        recursiveInsertion(molecule, elements.sliceArray(0 until elements.size - 1), node) // Recurse
     }
 
+    /**
+     * Print out every molecule in the trie.
+     *
+     * @param transform A lambda function to transform the molecule string before printing it.
+     */
     fun print(transform: (Molecule) -> String = { it.toString() }) {
         recursivePrint(root, transform)
     }
 
     private fun recursivePrint(current: ElementTrieNode, transform: (Molecule) -> String) {
-        if (current.isMolecule)
+        if (current.isMolecule) // If this is a molecule, print it
             println(transform(current.molecule!!))
-        for (child in current.children) {
+        for (child in current.children) { // Then recursively print every child
             recursivePrint(child ?: continue, transform)
         }
     }
 
+    // Searching does not work
+    fun search(moleculeName: String): Molecule? {
+        if (moleculeName.isEmpty()) return null
+        val elements = mutableListOf<String>()
+        var cur = ""
+        for (c in moleculeName) {
+            if (c.isDigit()) {
+                for (i in 0..c.digitToInt())
+                    elements += cur
+                cur = ""
+            } else if (c.isLowerCase()){
+                cur += c
+            } else {
+                if (cur.isNotEmpty()) elements += cur
+                cur = c.toString()
+            }
+        }
+        elements += cur
+        return recursiveSearch(elements.toTypedArray(), root)
+    }
+
+    private fun recursiveSearch(elements: Array<String>, current: ElementTrieNode): Molecule? {
+        if (elements.isEmpty()) return null
+        val child = current.children[(Element symbol elements[0]).number] ?: return null
+        if (elements.size == 1)
+            return if (child.isMolecule)
+                child.molecule
+            else
+                null
+        return recursiveSearch(elements.sliceArray(0 until elements.size - 1), child)
+
+    }
+
 }
 
+/**
+ * A node in the trie.
+ */
 class ElementTrieNode {
     val children = Array<ElementTrieNode?>(118) { null }
     var isMolecule = false
     var molecule: Molecule? = null
 }
 
+/**
+ * A class representing a single atom/element
+ */
 class Element private constructor(val symbol: String, val number: Int) {
+    /**
+     * The companion object has every element type already made
+     */
     companion object {
         val HYDROGEN = Element("H", 1)
         val HELIUM = Element("He", 2)
@@ -161,6 +209,11 @@ class Element private constructor(val symbol: String, val number: Int) {
         val TENNESSINE = Element("Ts", 117)
         val OGANESSON = Element("Og", 118)
 
+        /**
+         * A method to get an element by its atomic number
+         *
+         * (This doesn't seem to be needed, but it took a lot of work to make, so I won't remove it yet)
+         */
         infix fun number(index: Int) = mapOf(
             1 to HYDROGEN,
             2 to HELIUM,
@@ -281,12 +334,144 @@ class Element private constructor(val symbol: String, val number: Int) {
             117 to TENNESSINE,
             118 to OGANESSON
         )[index] ?: throw IllegalArgumentException("No element with index $index")
+
+        /**
+         * A method to get an element by its symbol
+         */
+        infix fun symbol(symbol: String) = mapOf(
+            "H" to HYDROGEN,
+            "He" to HELIUM,
+            "Li" to LITHIUM,
+            "Be" to BERYLLIUM,
+            "B" to BORON,
+            "C" to CARBON,
+            "N" to NITROGEN,
+            "O" to OXYGEN,
+            "F" to FLUORINE,
+            "Ne" to NEON,
+            "Na" to SODIUM,
+            "Mg" to MAGNESIUM,
+            "Al" to ALUMINUM,
+            "Si" to SILICON,
+            "P" to PHOSPHORUS,
+            "S" to SULFUR,
+            "Cl" to CHLORINE,
+            "Ar" to ARGON,
+            "K" to POTASSIUM,
+            "Ca" to CALCIUM,
+            "Sc" to SCANDIUM,
+            "Ti" to TITANIUM,
+            "V" to VANADIUM,
+            "Cr" to CHROMIUM,
+            "Mn" to MANGANESE,
+            "Fe" to IRON,
+            "Co" to COPPER,
+            "Ni" to NICKEL,
+            "Cu" to ZINC,
+            "Zn" to ZINC,
+            "Ga" to GALLIUM,
+            "Ge" to GERMANIUM,
+            "As" to ARSENIC,
+            "Se" to SELENIUM,
+            "Br" to BROMINE,
+            "Kr" to KRYPTON,
+            "Rb" to RUBIDIUM,
+            "Sr" to STRONTIUM,
+            "Y" to YTTRIUM,
+            "Zr" to ZIRCONIUM,
+            "Nb" to NIOBIUM,
+            "Mo" to MOLYBDENUM,
+            "Tc" to TECHNETIUM,
+            "Ru" to RUTHENIUM,
+            "Rh" to RHODIUM,
+            "Pd" to PALLADIUM,
+            "Ag" to SILVER,
+            "Cd" to CADMIUM,
+            "In" to INDIUM,
+            "Sn" to TIN,
+            "Sb" to ANTIMONY,
+            "Te" to TELLURIUM,
+            "I" to IODINE,
+            "Xe" to XENON,
+            "Cs" to CESIUM,
+            "Ba" to BARIUM,
+            "La" to LANTHANUM,
+            "Ce" to CERIUM,
+            "Pr" to PRASEODYMIUM,
+            "Nd" to NEODYMIUM,
+            "Pm" to PROMETHIUM,
+            "Sm" to SAMARIUM,
+            "Eu" to EUROPIUM,
+            "Gd" to GADOLINIUM,
+            "Tb" to TERBIUM,
+            "Dy" to DYSPROSIUM,
+            "Ho" to HOLMIUM,
+            "Er" to ERBIUM,
+            "Tm" to THULIUM,
+            "Yb" to YTTERBIUM,
+            "Lu" to LUTETIUM,
+            "Hf" to HAFNIUM,
+            "Ta" to TANTALUM,
+            "W" to TUNGSTEN,
+            "Re" to RHENIUM,
+            "Os" to OSMIUM,
+            "Ir" to IRIDIUM,
+            "Pt" to PLATINUM,
+            "Au" to GOLD,
+            "Hg" to MERCURY,
+            "Tl" to THALLIUM,
+            "Pb" to LEAD,
+            "Bi" to BISMUTH,
+            "Po" to POLONIUM,
+            "At" to ASTATINE,
+            "Rn" to RADON,
+            "Fr" to FRANCIUM,
+            "Ra" to RADIUM,
+            "Ac" to ACTINIUM,
+            "Th" to THORIUM,
+            "Pa" to PROTACTINIUM,
+            "U" to URANIUM,
+            "Np" to NEPTUNIUM,
+            "Pu" to PLUTONIUM,
+            "Am" to AMERICIUM,
+            "Cm" to CURIUM,
+            "Bk" to BERKELIUM,
+            "Cf" to CALIFORNIUM,
+            "Es" to EINSTEINIUM,
+            "Fm" to FERMIUM,
+            "Md" to MENDELEVIUM,
+            "No" to NOBELIUM,
+            "Lr" to LAWRENCIUM,
+            "Rf" to RUTHERFORDIUM,
+            "Db" to DUBNIUM,
+            "Sg" to SEABORGIUM,
+            "Bh" to BOHRIUM,
+            "Hs" to HASSIUM,
+            "Mt" to MEITNERIUM,
+            "Ds" to DARMSTADTIUM,
+            "Rg" to ROENTGENIUM,
+            "Cn" to COPERNICIUM,
+            "Nh" to NIHONIUM,
+            "Fl" to FLEROVIUM,
+            "Mc" to MOSCOVIUM,
+            "Lv" to LIVERMORIUM,
+            "Ts" to TENNESSINE,
+            "Og" to OGANESSON
+        )[symbol] ?: throw IllegalArgumentException("No element with symbol $symbol")
     }
 }
 
-class Molecule constructor(vararg val elements: Element, informationBuilder: Information.() -> Unit) {
+/**
+ * A class representing a full molecule
+ *
+ * It is constructed with a vararg list of elements, then a lambda builder for the thermodynamic information
+ */
+class Molecule constructor(vararg val elements: Element, informationBuilder: Information.() -> Unit = { }) {
     val information = Information().apply(informationBuilder)
 
+    /**
+     * The companion object has some pre-made molecules
+     */
     companion object {
         val Al = Molecule(Element.ALUMINUM) {
             solid {
@@ -307,18 +492,30 @@ class Molecule constructor(vararg val elements: Element, informationBuilder: Inf
         }
     }
 
+    /**
+     * Convert the molecule to a string with proper formatting
+     */
     override fun toString(): String {
-        fun Int.sub() = mapOf(
-            2 to "₂",
-            3 to "₃",
-            4 to "₄",
-            5 to "₅",
-            6 to "₆",
-            7 to "₇",
-            8 to "₈",
-            9 to "₉"
-        )[this] ?: ""
-
+        /**
+         * Convert a given number to a string of that number as subscript
+         */
+        fun Int.sub(): String {
+            val subscripts = mapOf(
+                '0' to "₀",
+                '1' to "₁",
+                '2' to "₂",
+                '3' to "₃",
+                '4' to "₄",
+                '5' to "₅",
+                '6' to "₆",
+                '7' to "₇",
+                '8' to "₈",
+                '9' to "₉"
+            )
+            if (this <= 1) return ""
+            return this.toString().toCharArray().joinToString(separator = "") { subscripts[it]!! }
+        }
+        // This converts a molecule to a string with proper subscript formatting
         var result = ""
         val current = mutableListOf<String>()
         for (atom in elements) {
@@ -339,6 +536,9 @@ class Molecule constructor(vararg val elements: Element, informationBuilder: Inf
         return result
     }
 
+    /**
+     * A class to store thermodynamic information about a molecule by state of matter
+     */
     class Information {
         var solid: Properties? = null
             private set
@@ -348,6 +548,8 @@ class Molecule constructor(vararg val elements: Element, informationBuilder: Inf
             private set
         var aqueous: Properties? = null
             private set
+
+        // These are four builder methods for the thermodynamic properties
 
         fun solid(solid: Properties.() -> Unit) {
             this.solid = Properties().apply(solid)
@@ -374,6 +576,9 @@ class Molecule constructor(vararg val elements: Element, informationBuilder: Inf
         """.trimMargin()
     }
 
+    /**
+     * A class to store thermodynamic properties of a certain state of matter of a molecule
+     */
     class Properties {
         var enthalpy: Double? = null
         var entropy: Double? = null
